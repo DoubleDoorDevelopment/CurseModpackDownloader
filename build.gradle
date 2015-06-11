@@ -19,8 +19,7 @@ group = "net.doubledoordev.cmd"
 version = "0.1.0"
 if (System.getenv().BUILD_NUMBER != null) version += "." + System.getenv().BUILD_NUMBER
 
-def vendor = "DoubleDoorDevelopment"
-def gitURL = "github.com/DoubleDoorDevelopment/CurseModpackDownloader"
+def githuborg = "DoubleDoorDevelopment"
 
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
@@ -111,7 +110,7 @@ uploadArchives {
                 }
                 pom {
                     groupId = project.group
-                    version = project.minecraft.version + "-" + project.version
+                    version = project.version
                     artifactId = project.archivesBaseName
                     project {
                         name project.archivesBaseName
