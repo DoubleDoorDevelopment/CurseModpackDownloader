@@ -74,13 +74,13 @@ jar {
 
     manifest {
         attributes(
-                "Created-By": vendor,
+                "Created-By": githuborg,
                 "Specification-Title": project.name,
                 "Specification-Version": project.version,
-                "Specification-Vendor": vendor,
+                "Specification-Vendor": githuborg,
                 "Implementation-Title": project.name,
                 "Implementation-Version": project.version,
-                "Implementation-Vendor": vendor,
+                "Implementation-Vendor": githuborg,
                 "Main-Class": project.group + ".Main"
         )
     }
