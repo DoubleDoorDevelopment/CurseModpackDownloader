@@ -206,7 +206,9 @@ public class CurseModpackDownloader
 
     private File downloadForgeInstaller() throws IOException
     {
-        ForgeBuild forgeBuild = forgeJson.number.get(forgeVersion.substring(forgeVersion.lastIndexOf('.') + 1));
+        ForgeBuild forgeBuild;
+        if (forgeVersion.equalsIgnoreCase("forge-recommended") || forgeVersion.equalsIgnoreCase("forge-latest")) forgeBuild = forgeJson.number.get(String.valueOf(forgeJson.promos.get(forgeVersion.replace("forge", manifest.manifestVersion))));
+        else forgeBuild = forgeJson.number.get(forgeVersion.substring(forgeVersion.lastIndexOf('.') + 1));
         if (forgeBuild == null)
         {
             System.out.println("======================================================================");
