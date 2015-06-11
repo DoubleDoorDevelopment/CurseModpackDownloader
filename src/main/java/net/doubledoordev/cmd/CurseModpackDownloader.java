@@ -44,7 +44,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.util.Date;
-import java.util.StringJoiner;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -156,16 +155,24 @@ public class CurseModpackDownloader
 
             pw.println("CurseModpackDownloader Modpack information file");
             pw.println("===============================================");
-            pw.print("Downloaded date/time: ");pw.println(new Date().toString());
-            pw.print("Minecraft verion: ");pw.println(manifest.minecraft.version);
-            pw.print("Pack name: ");pw.println(manifest.name);
-            pw.print("Pack version: ");pw.println(manifest.version);
-            pw.print("Pack author: ");pw.println(manifest.author);
+            pw.print("Downloaded date/time: ");
+            pw.println(new Date().toString());
+            pw.print("Minecraft verion: ");
+            pw.println(manifest.minecraft.version);
+            pw.print("Pack name: ");
+            pw.println(manifest.name);
+            pw.print("Pack version: ");
+            pw.println(manifest.version);
+            pw.print("Pack author: ");
+            pw.println(manifest.author);
             pw.println("Modloaders:");
             pw.println("-----------");
             for (Modloader modloader : manifest.minecraft.modLoaders)
             {
-                pw.print('\t');pw.print(modloader.id);pw.print("    Primary: ");pw.println(modloader.primary);
+                pw.print('\t');
+                pw.print(modloader.id);
+                pw.print("    Primary: ");
+                pw.println(modloader.primary);
             }
             pw.println("Forge Mods: (project id -> project name    file id -> file name)");
             pw.println("----------------------------------------------------------------");
@@ -189,9 +196,9 @@ public class CurseModpackDownloader
     private Process runForgeInstaller(File file) throws IOException
     {
         ProcessBuilder processBuilder = new ProcessBuilder("java", "-jar", file.getName(), "--installServer");
-        StringJoiner joiner = new StringJoiner(" ");
-        for (String cmd : processBuilder.command()) joiner.add(cmd);
-        System.out.println("Running forge installer with command: " + joiner.toString());
+        StringBuilder joiner = new StringBuilder("Running forge installer with command: ");
+        for (String cmd : processBuilder.command()) joiner.append(cmd).append(' ');
+        System.out.println(joiner.toString());
         processBuilder.directory(output);
         processBuilder.inheritIO();
         return processBuilder.start();
@@ -400,7 +407,7 @@ public class CurseModpackDownloader
 
                 try
                 {
-                    System.out.println("Getting mod #" + (j+1) + " of " + manifest.files.size());
+                    System.out.println("Getting mod #" + (j + 1) + " of " + manifest.files.size());
 
                     HttpURLConnection con = (HttpURLConnection) (new URL("http://minecraft.curseforge.com/mc-mods/" + curseFile.projectID).openConnection());
                     con.setInstanceFollowRedirects(true);

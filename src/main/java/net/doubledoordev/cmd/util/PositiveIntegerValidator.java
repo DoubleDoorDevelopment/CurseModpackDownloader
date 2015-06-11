@@ -29,6 +29,6 @@ public class PositiveIntegerValidator implements IValueValidator<Integer>
     @Override
     public void validate(String name, Integer value) throws ParameterException
     {
-        if (value < 0) throw new ParameterException("Parameter " + name + " should be positive (found " + value +")");
+        if (value < 0) throw new ParameterException("Parameter " + name + " should be positive (found " + value + ")");
     }
 }

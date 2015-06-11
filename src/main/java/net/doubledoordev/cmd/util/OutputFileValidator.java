@@ -20,10 +20,8 @@ package net.doubledoordev.cmd.util;
 
 import com.beust.jcommander.IValueValidator;
 import com.beust.jcommander.ParameterException;
-import org.apache.commons.io.FilenameUtils;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 
 /**
  * @author Dries007
