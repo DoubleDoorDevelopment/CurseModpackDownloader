@@ -102,3 +102,52 @@ task wrapper(type: Wrapper) {
     gradleVersion = '2.0'
 }
 
+uploadArchives {
+    if (project.hasProperty("dddUser") && project.hasProperty("dddUrl") && project.hasProperty("dddPass")) {
+        repositories {
+            mavenDeployer {
+                repository(url: dddUrl) {
+                    authentication(userName: dddUser, password: dddPass)
+                }
+                pom {
+                    groupId = project.group
+                    version = project.minecraft.version + "-" + project.version
+                    artifactId = project.archivesBaseName
+                    project {
+                        name project.archivesBaseName
+                        packaging 'jar'
+                        description = description
+                        url 'https://github.com/' + githuborg + '/' + project.archivesBaseName
+
+                        scm {
+                            url 'https://github.com/' + githuborg + '/' + project.archivesBaseName
+                            connection 'scm:git:git://github.com/' + githuborg + '/' + project.archivesBaseName + '.git'
+                            developerConnection 'scm:git:git@github.com:' + githuborg + '/' + project.archivesBaseName + '.git'
+                        }
+
+                        issueManagement {
+                            system 'github'
+                            url 'https://github.com/' + githuborg + '/' + project.archivesBaseName + '/issues'
+                        }
+
+                        licenses  {
+                            license  {
+                                name 'New BSD License'
+                                url 'https://raw.github.com/' + githuborg + '/' + project.archivesBaseName + '/master/LICENCE.txt'
+                                distribution 'repo'
+                            }
+                        }
+
+                        developers {
+                            developer {
+                                id 'Dries007'
+                                name 'Dries007'
+                                roles { role 'developer' }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
