@@ -76,6 +76,8 @@ public class CurseModpackDownloader
     @Parameter(names = {"-threads", "-t"}, description = "# of parallel download threads", validateValueWith = PositiveIntegerValidator.class, arity = 1)
     public int threads = 4;
 
+    public PrintStream logger = System.out;
+
     private boolean inputEqualsOutput;
     final AtomicInteger currentFile = new AtomicInteger();
     private Manifest manifest;
@@ -133,14 +135,14 @@ public class CurseModpackDownloader
         waitTillDone();
         writeModpackinfo();
 
-        System.out.println("Done downloading mods.");
+        logger.println("Done downloading mods.");
 
         if (!server)
         {
-            System.out.println("You need to manually install the client, if applicable, the forge installer has already been downloaded to the output directory.");
+            logger.println("You need to manually install the client, if applicable, the forge installer has already been downloaded to the output directory.");
         }
         long time = System.currentTimeMillis() - start;
-        System.out.println(String.format("Total time to completion: %.2f seconds", time / 1000.0));
+        logger.println(String.format("Total time to completion: %.2f seconds", time / 1000.0));
     }
 
     private void writeModpackinfo()
@@ -198,7 +200,7 @@ public class CurseModpackDownloader
         ProcessBuilder processBuilder = new ProcessBuilder("java", "-jar", file.getName(), "--installServer");
         StringBuilder joiner = new StringBuilder("Running forge installer with command: ");
         for (String cmd : processBuilder.command()) joiner.append(cmd).append(' ');
-        System.out.println(joiner.toString());
+        logger.println(joiner.toString());
         processBuilder.directory(output);
         processBuilder.inheritIO();
         return processBuilder.start();
@@ -211,10 +213,10 @@ public class CurseModpackDownloader
         else forgeBuild = forgeJson.number.get(forgeVersion.substring(forgeVersion.lastIndexOf('.') + 1));
         if (forgeBuild == null)
         {
-            System.out.println("======================================================================");
-            System.out.println("Something screwed up the forge installation. You will have to do it manually.");
-            System.out.println("Forge version: " + forgeVersion);
-            System.out.println("======================================================================");
+            logger.println("======================================================================");
+            logger.println("Something screwed up the forge installation. You will have to do it manually.");
+            logger.println("Forge version: " + forgeVersion);
+            logger.println("======================================================================");
             return null;
         }
 
@@ -234,10 +236,10 @@ public class CurseModpackDownloader
             }
         }
 
-        System.out.println("======================================================================");
-        System.out.println("This forge version has no installer. You will have to do it manually.");
-        System.out.println("Forge version: " + forgeVersion);
-        System.out.println("======================================================================");
+        logger.println("======================================================================");
+        logger.println("This forge version has no installer. You will have to do it manually.");
+        logger.println("Forge version: " + forgeVersion);
+        logger.println("======================================================================");
         return null;
     }
 
@@ -258,10 +260,10 @@ public class CurseModpackDownloader
         }
         if (forgeJson == null)
         {
-            System.out.println("======================================================================");
-            System.out.println("Something screwed up the forge installation. You will have to do it manually.");
-            System.out.println("Forge version: " + forgeVersion);
-            System.out.println("======================================================================");
+            logger.println("======================================================================");
+            logger.println("Something screwed up the forge installation. You will have to do it manually.");
+            logger.println("Forge version: " + forgeVersion);
+            logger.println("======================================================================");
         }
     }
 
@@ -280,9 +282,9 @@ public class CurseModpackDownloader
             }
             else
             {
-                System.out.println("======================================================================");
-                System.out.println("WARNING: YOU NEED TO MANUALLY INSTALL THIS MODLOADER: " + modloader.id);
-                System.out.println("======================================================================");
+                logger.println("======================================================================");
+                logger.println("WARNING: YOU NEED TO MANUALLY INSTALL THIS MODLOADER: " + modloader.id);
+                logger.println("======================================================================");
             }
         }
         return out;
@@ -290,7 +292,7 @@ public class CurseModpackDownloader
 
     private void startModDownloadThreads()
     {
-        System.out.println("Starting " + threads + " downloader threads.");
+        logger.println("Starting " + threads + " downloader threads.");
         threadObjects = new Thread[threads];
         for (int i = 0; i < threads; i++)
         {
@@ -349,7 +351,7 @@ public class CurseModpackDownloader
                 {
                     if (System.currentTimeMillis() - lastUpdate > 5000)
                     {
-                        System.out.println("Unzipping... " + pm.getPercentDone() + "%");
+                        logger.println("Unzipping... " + pm.getPercentDone() + "%");
                         lastUpdate = System.currentTimeMillis();
                     }
                     smallDelay();
@@ -409,7 +411,7 @@ public class CurseModpackDownloader
 
                 try
                 {
-                    System.out.println("Getting mod #" + (j + 1) + " of " + manifest.files.size());
+                    logger.println("Getting mod #" + (j + 1) + " of " + manifest.files.size());
 
                     HttpURLConnection con = (HttpURLConnection) (new URL("http://minecraft.curseforge.com/mc-mods/" + curseFile.projectID).openConnection());
                     con.setInstanceFollowRedirects(true);
