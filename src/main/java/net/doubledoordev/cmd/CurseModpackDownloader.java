@@ -202,7 +202,7 @@ public class CurseModpackDownloader
         for (String cmd : processBuilder.command()) joiner.append(cmd).append(' ');
         logger.println(joiner.toString());
         processBuilder.directory(output);
-        processBuilder.inheritIO();
+        processBuilder.redirectErrorStream(true);
         return processBuilder.start();
     }
 
@@ -301,12 +301,19 @@ public class CurseModpackDownloader
         }
     }
 
-    private void waitTillDone()
+    private void waitTillDone() throws IOException
     {
         if (installerProcess != null)
         {
             try
             {
+                BufferedReader reader = new BufferedReader(new InputStreamReader(installerProcess.getInputStream()));
+                String line;
+                while ((line = reader.readLine()) != null)
+                {
+                    logger.println(line);
+                }
+
                 installerProcess.waitFor();
                 if (installerFile.exists()) installerFile.delete();
             }
