@@ -435,8 +435,27 @@ public class CurseModpackDownloader
                     con = (HttpURLConnection) (new URL(projectURL + "/files/" + curseFile.fileID + "/download").openConnection());
                     con.setInstanceFollowRedirects(true);
                     con.connect();
-                    con.getResponseCode();
-                    con.disconnect();
+
+                    boolean redirect = false;
+
+                    // normally, 3xx is redirect
+                    int status = con.getResponseCode();
+                    if (status != HttpURLConnection.HTTP_OK) {
+                        if (status == HttpURLConnection.HTTP_MOVED_TEMP
+                                || status == HttpURLConnection.HTTP_MOVED_PERM
+                                || status == HttpURLConnection.HTTP_SEE_OTHER)
+                            redirect = true;
+                    }
+
+                    if (redirect) {
+                        // get redirect url from "location" header field
+                        String newUrl = con.getHeaderField("Location");
+                        // open the new connnection again
+                        con = (HttpURLConnection) new URL(newUrl).openConnection();
+                    } else {
+                        con.disconnect();
+                    }
+
                     String filename = FilenameUtils.getName(con.getURL().getFile());
                     i = filename.indexOf('?');
                     if (i != -1) filename = filename.substring(0, i);
