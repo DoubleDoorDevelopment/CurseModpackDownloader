@@ -80,6 +80,7 @@ public class CurseModpackDownloader
 
     private boolean inputEqualsOutput;
     final AtomicInteger currentFile = new AtomicInteger();
+    final AtomicInteger failCounter = new AtomicInteger();
     private Manifest manifest;
     private File modsFolder;
     private ForgeJson forgeJson;
@@ -337,6 +338,9 @@ public class CurseModpackDownloader
             smallDelay();
         }
         while (!done);
+
+        if (failCounter.get() != 0)
+            logger.println("!!!     Some mod downloads failed       !!!");
     }
 
     private void unpackOrMoveJson() throws ZipException, IOException
@@ -409,6 +413,23 @@ public class CurseModpackDownloader
 
     private class ModDownloader implements Runnable
     {
+        private String getFinalURL(String url) throws IOException
+        {
+            HttpURLConnection.setFollowRedirects(true);
+            HttpURLConnection con = (HttpURLConnection) new URL("https://minecraft.curseforge.com" + url).openConnection();
+            try
+            {
+                con.connect();
+                // if (con.getResponseCode() / 100 == 3)
+                if (con.getHeaderField("Location") != null) return con.getHeaderField("Location");
+                return con.getURL().getFile().replaceAll("\\?.*$", "");
+            }
+            finally
+            {
+                con.disconnect();
+            }
+        }
+
         @Override
         public void run()
         {
@@ -418,57 +439,25 @@ public class CurseModpackDownloader
 
                 try
                 {
-                    logger.println("Getting mod #" + (j + 1) + " of " + manifest.files.size());
+                    logger.println("Getting mod #" + (j + 1) + " of " + manifest.files.size() + " (" + curseFile.projectID + ", " + curseFile.fileID + ")");
 
-                    HttpURLConnection con = (HttpURLConnection) (new URL("http://minecraft.curseforge.com/mc-mods/" + curseFile.projectID).openConnection());
-                    con.setInstanceFollowRedirects(true);
-                    con.connect();
-                    con.getResponseCode();
-                    con.disconnect();
-                    String projectURL = con.getURL().toExternalForm();
-                    int i = projectURL.indexOf('?');
-                    if (i != -1) projectURL = projectURL.substring(0, i);
+                    String projectURL = getFinalURL("/projects/" + curseFile.projectID);
 
-                    curseFile.projectName = FilenameUtils.getName(projectURL);
-                    curseFile.projectName = curseFile.projectName.substring(curseFile.projectName.indexOf('-') + 1);
+                    String projectName = FilenameUtils.getName(projectURL);
+                    if (projectName.endsWith("-" + curseFile.projectID))
+                        projectName = projectName.substring(0, projectName.lastIndexOf('-'));
+                    curseFile.projectName = URLDecoder.decode(projectName, "UTF-8");
 
-                    con = (HttpURLConnection) (new URL(projectURL + "/files/" + curseFile.fileID + "/download").openConnection());
-                    con.setInstanceFollowRedirects(true);
-                    con.connect();
+                    String fileURL = getFinalURL(projectURL + "/files/" + curseFile.fileID + "/download");
 
-                    boolean redirect = false;
+                    curseFile.fileName = URLDecoder.decode(FilenameUtils.getName(fileURL), "UTF-8");
 
-                    // normally, 3xx is redirect
-                    int status = con.getResponseCode();
-                    if (status != HttpURLConnection.HTTP_OK) {
-                        if (status == HttpURLConnection.HTTP_MOVED_TEMP
-                                || status == HttpURLConnection.HTTP_MOVED_PERM
-                                || status == HttpURLConnection.HTTP_SEE_OTHER)
-                            redirect = true;
-                    }
-
-                    if (redirect) {
-                        // get redirect url from "location" header field
-                        String newUrl = con.getHeaderField("Location");
-                        // open the new connnection again
-                        con = (HttpURLConnection) new URL(newUrl).openConnection();
-                    } else {
-                        con.disconnect();
-                    }
-
-                    String filename = FilenameUtils.getName(con.getURL().getFile());
-                    i = filename.indexOf('?');
-                    if (i != -1) filename = filename.substring(0, i);
-
-                    filename = URLDecoder.decode(filename, "UTF-8");
-
-                    FileUtils.copyURLToFile(con.getURL(), new File(modsFolder, filename));
-
-                    curseFile.fileName = filename;
+                    FileUtils.copyURLToFile(new URL(fileURL), new File(modsFolder, curseFile.fileName));
                 }
                 catch (IOException e)
                 {
                     e.printStackTrace();
+                    failCounter.incrementAndGet();
                 }
             }
         }
