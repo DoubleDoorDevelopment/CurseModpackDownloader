@@ -43,7 +43,10 @@ import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -79,7 +82,8 @@ public class CurseModpackDownloader
     public PrintStream logger = System.out;
 
     private boolean inputEqualsOutput;
-    final AtomicInteger currentFile = new AtomicInteger();
+    private final AtomicInteger currentFile = new AtomicInteger();
+    private List<String> failedFiles = Collections.synchronizedList(new ArrayList<String>());
     final AtomicInteger failCounter = new AtomicInteger();
     private Manifest manifest;
     private File modsFolder;
@@ -413,23 +417,6 @@ public class CurseModpackDownloader
 
     private class ModDownloader implements Runnable
     {
-        private String getFinalURL(String url) throws IOException
-        {
-            HttpURLConnection.setFollowRedirects(true);
-            HttpURLConnection con = (HttpURLConnection) new URL("https://minecraft.curseforge.com" + url).openConnection();
-            try
-            {
-                con.connect();
-                // if (con.getResponseCode() / 100 == 3)
-                if (con.getHeaderField("Location") != null) return con.getHeaderField("Location");
-                return con.getURL().getFile().replaceAll("\\?.*$", "");
-            }
-            finally
-            {
-                con.disconnect();
-            }
-        }
-
         @Override
         public void run()
         {
@@ -441,24 +428,51 @@ public class CurseModpackDownloader
                 {
                     logger.println("Getting mod #" + (j + 1) + " of " + manifest.files.size() + " (" + curseFile.projectID + ", " + curseFile.fileID + ")");
 
-                    String projectURL = getFinalURL("/projects/" + curseFile.projectID);
-
-                    String projectName = FilenameUtils.getName(projectURL);
-                    if (projectName.endsWith("-" + curseFile.projectID))
-                        projectName = projectName.substring(0, projectName.lastIndexOf('-'));
-                    curseFile.projectName = URLDecoder.decode(projectName, "UTF-8");
-
-                    String fileURL = getFinalURL(projectURL + "/files/" + curseFile.fileID + "/download");
-
-                    curseFile.fileName = URLDecoder.decode(FilenameUtils.getName(fileURL), "UTF-8");
-
-                    FileUtils.copyURLToFile(new URL(fileURL), new File(modsFolder, curseFile.fileName));
+                    curseFile.projectName = getProjectName(curseFile.projectID);
+                    String url = getFile(curseFile.projectName, curseFile.fileID);
+                    curseFile.fileName = URLDecoder.decode(FilenameUtils.getName(url), "UTF-8");
+                    FileUtils.copyURLToFile(new URL(url), new File(modsFolder, curseFile.fileName));
                 }
                 catch (IOException e)
                 {
                     e.printStackTrace();
                     failCounter.incrementAndGet();
                 }
+            }
+        }
+    }
+
+    public static String getFile(String projectName, int fileId) throws IOException
+    {
+        return getFinalURL("https://minecraft.curseforge.com/projects/" + projectName + "/files/" + fileId + "/download");
+    }
+
+    public static String getProjectName(int projectId) throws IOException
+    {
+        String out = getFinalURL("https://minecraft.curseforge.com/projects/" + projectId);
+        return out.substring(out.lastIndexOf('/') + 1);
+    }
+
+    public static String getFinalURL(String url) throws IOException
+    {
+        while (true)
+        {
+            HttpURLConnection con = null;
+            try
+            {
+                con = (HttpURLConnection) new URL(url).openConnection();
+                con.setInstanceFollowRedirects(false);
+                con.connect();
+                if (con.getHeaderField("Location") == null) return url;
+                url = con.getHeaderField("Location");
+            }
+            catch (IOException e)
+            {
+                return url;
+            }
+            finally
+            {
+                if (con != null) con.disconnect();
             }
         }
     }
