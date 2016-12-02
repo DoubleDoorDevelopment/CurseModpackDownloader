@@ -61,6 +61,6 @@ public class Main
             return;
         }
 
-        curseModpackDownloader.run();
+        Runtime.getRuntime().exit(curseModpackDownloader.run());
     }
 }

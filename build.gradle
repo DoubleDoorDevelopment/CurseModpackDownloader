@@ -16,7 +16,7 @@ apply plugin: "idea-utils"
 archivesBaseName = "CurseModpackDownloader"
 group = "net.doubledoordev.cmd"
 
-version = "0.1.1"
+version = "0.1.2"
 if (System.getenv().BUILD_NUMBER != null) version += "." + System.getenv().BUILD_NUMBER
 
 def githuborg = "DoubleDoorDevelopment"

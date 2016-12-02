@@ -105,7 +105,7 @@ public class CurseModpackDownloader
     {
     }
 
-    public void run() throws IOException, ZipException
+    public int run() throws IOException, ZipException
     {
         final long start = System.currentTimeMillis();
         inputCheck();
@@ -157,6 +157,8 @@ public class CurseModpackDownloader
         }
         long time = System.currentTimeMillis() - start;
         if (!quiet) logger.println(String.format("Total time to completion: %.2f seconds", time / 1000.0));
+
+        return failCounter.get() == 0 ? 0 : 1;
     }
 
     private void writeModpackinfo()
@@ -214,7 +216,7 @@ public class CurseModpackDownloader
         ProcessBuilder processBuilder = new ProcessBuilder("java", "-jar", file.getName(), "--installServer");
         StringBuilder joiner = new StringBuilder("Running forge installer with command: ");
         for (String cmd : processBuilder.command()) joiner.append(cmd).append(' ');
-        logger.println(joiner.toString());
+        if (!quiet) logger.println(joiner.toString());
         processBuilder.directory(output);
         processBuilder.redirectErrorStream(true);
         return processBuilder.start();
@@ -227,10 +229,7 @@ public class CurseModpackDownloader
         else forgeBuild = forgeJson.number.get(forgeVersion.substring(forgeVersion.lastIndexOf('.') + 1));
         if (forgeBuild == null)
         {
-            logger.println("======================================================================");
-            logger.println("Something screwed up the forge installation. You will have to do it manually.");
-            logger.println("Forge version: " + forgeVersion);
-            logger.println("======================================================================");
+            logger.println("ERROR Forge version: " + forgeVersion + " something random went wrong.");
             return null;
         }
 
@@ -250,10 +249,7 @@ public class CurseModpackDownloader
             }
         }
 
-        logger.println("======================================================================");
-        logger.println("This forge version has no installer. You will have to do it manually.");
-        logger.println("Forge version: " + forgeVersion);
-        logger.println("======================================================================");
+        logger.println("ERROR Forge version: " + forgeVersion + " has no installer");
         return null;
     }
 
@@ -274,10 +270,7 @@ public class CurseModpackDownloader
         }
         if (forgeJson == null)
         {
-            logger.println("======================================================================");
-            logger.println("Something screwed up the forge installation. You will have to do it manually.");
-            logger.println("Forge version: " + forgeVersion);
-            logger.println("======================================================================");
+            logger.println("ERROR Forge version: " + forgeVersion + " something random went wrong.");
         }
     }
 
@@ -296,9 +289,7 @@ public class CurseModpackDownloader
             }
             else
             {
-                logger.println("======================================================================");
                 logger.println("WARNING: YOU NEED TO MANUALLY INSTALL THIS MODLOADER: " + modloader.id);
-                logger.println("======================================================================");
             }
         }
         return out;
@@ -354,6 +345,8 @@ public class CurseModpackDownloader
 
         if (failCounter.get() != 0)
             logger.println("!!!     Some mod downloads failed       !!!");
+        else
+            logger.println("This was a triumph.");
     }
 
     private void unpackOrMoveJson() throws ZipException, IOException
@@ -375,7 +368,7 @@ public class CurseModpackDownloader
                 {
                     if (System.currentTimeMillis() - lastUpdate > 5000)
                     {
-                        logger.println("Unzipping... " + pm.getPercentDone() + "%");
+                        if (!quiet) logger.println("Unzipping... " + pm.getPercentDone() + "%");
                         lastUpdate = System.currentTimeMillis();
                     }
                     smallDelay();
