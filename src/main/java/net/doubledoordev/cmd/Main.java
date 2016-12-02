@@ -41,14 +41,6 @@ public class Main
         if (curseModpackDownloader.help)
         {
             commander.usage();
-//            System.out.println();
-//            System.out.println("List of parameters:     [name, ...]: description    [default value]");
-//            System.out.println("-------------------");
-//            for (ParameterDescription description : commander.getParameters())
-//            {
-//                System.out.println(description.getNames() + ": " + description.getDescription() + "    [" + description.getDefault() + "]");
-//            }
-//            System.out.println();
             System.out.println("License:");
             System.out.println("--------");
             System.out.println("CurseModpackDownloader");

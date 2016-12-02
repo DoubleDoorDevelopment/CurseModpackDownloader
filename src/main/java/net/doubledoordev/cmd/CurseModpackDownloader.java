@@ -64,6 +64,12 @@ public class CurseModpackDownloader
     @Parameter(names = {"-server", "-s"}, description = "Install a server.")
     public boolean server = false;
 
+    @Parameter(names = {"-noForge", "-nf"}, description = "Don't download Forge.")
+    public boolean noForge = false;
+
+    @Parameter(names = {"-quiet", "-q"}, description = "Quiet. Doesn't output extra files like log.")
+    public boolean quiet = false;
+
     @Parameter(names = {"-eula"}, description = "Write a eula file, if you are installing a server. This indicates your agreement.")
     public boolean eula = false;
 
@@ -114,40 +120,43 @@ public class CurseModpackDownloader
         mcVersion = manifest.minecraft.version;
         forgeVersion = getForgeVersion();
 
-        if (forgeVersion != null)
+        if (!noForge)
         {
-            downloadForgeJson();
-            if (forgeJson != null)
+            if (forgeVersion != null)
             {
-                installerFile = downloadForgeInstaller();
-                if (installerFile != null && server)
+                downloadForgeJson();
+                if (forgeJson != null)
                 {
-                    installerProcess = runForgeInstaller(installerFile);
+                    installerFile = downloadForgeInstaller();
+                    if (installerFile != null && server)
+                    {
+                        installerProcess = runForgeInstaller(installerFile);
+                    }
                 }
             }
-        }
-        else
-        {
-            URL mcServerJar = new URL("http://s3.amazonaws.com/Minecraft.Download/versions/" + mcVersion + "/minecraft_server." + mcVersion + ".jar");
-            FileUtils.copyURLToFile(mcServerJar, new File(output, FilenameUtils.getName(mcServerJar.getFile())));
+            else
+            {
+                URL mcServerJar = new URL("http://s3.amazonaws.com/Minecraft.Download/versions/" + mcVersion + "/minecraft_server." + mcVersion + ".jar");
+                FileUtils.copyURLToFile(mcServerJar, new File(output, FilenameUtils.getName(mcServerJar.getFile())));
+            }
         }
 
-        if (server && eula)
+        if (server && eula && !quiet)
         {
             FileUtils.writeStringToFile(new File(output, "eula.txt"), "#No bullshit EULA file, courtesy of CurseModpackDownloader\n#https://account.mojang.com/documents/minecraft_eula\n#" + new Date().toString() + "\neula=true");
         }
 
         waitTillDone();
-        writeModpackinfo();
+        if (!quiet) writeModpackinfo();
 
-        logger.println("Done downloading mods.");
+        if (!quiet) logger.println("Done downloading mods.");
 
         if (!server)
         {
-            logger.println("You need to manually install the client, if applicable, the forge installer has already been downloaded to the output directory.");
+            if (!quiet) logger.println("You need to manually install the client, if applicable, the forge installer has already been downloaded to the output directory.");
         }
         long time = System.currentTimeMillis() - start;
-        logger.println(String.format("Total time to completion: %.2f seconds", time / 1000.0));
+        if (!quiet) logger.println(String.format("Total time to completion: %.2f seconds", time / 1000.0));
     }
 
     private void writeModpackinfo()
@@ -426,17 +435,20 @@ public class CurseModpackDownloader
 
                 try
                 {
-                    logger.println("Getting mod #" + (j + 1) + " of " + manifest.files.size() + " (" + curseFile.projectID + ", " + curseFile.fileID + ")");
+                    if (!quiet) logger.println("Getting mod #" + (j + 1) + " of " + manifest.files.size() + " (" + curseFile.projectID + ", " + curseFile.fileID + ")");
 
                     curseFile.projectName = getProjectName(curseFile.projectID);
                     String url = getFile(curseFile.projectName, curseFile.fileID);
                     curseFile.fileName = URLDecoder.decode(FilenameUtils.getName(url), "UTF-8");
-                    FileUtils.copyURLToFile(new URL(url), new File(modsFolder, curseFile.fileName));
+                    File f = new File(modsFolder, curseFile.fileName);
+                    if (!f.exists()) FileUtils.copyURLToFile(new URL(url), f);
                 }
                 catch (IOException e)
                 {
                     e.printStackTrace();
                     failCounter.incrementAndGet();
+
+                    logger.println(String.format("ERROR Downloading mod file %s (%d) in project %s (%d).", curseFile.fileName, curseFile.fileID, curseFile.projectName, curseFile.projectID));
                 }
             }
         }
