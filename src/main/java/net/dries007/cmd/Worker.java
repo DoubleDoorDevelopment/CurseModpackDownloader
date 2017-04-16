@@ -160,8 +160,14 @@ public class Worker implements Runnable
                     File forge = downloadForgeInstaller(forgeJson);
                     if (!arguments.isClient)
                     {
-                        nonForgeModloaders.add("forge-no-installer-" + forgeVersion);
-                        doForgeInstall(forge);
+                        if (forge != null)
+                        {
+                            doForgeInstall(forge);
+                        }
+                        else
+                        {
+                            nonForgeModloaders.add("forge-no-installer-" + forgeVersion);
+                        }
                     }
                 }
             }

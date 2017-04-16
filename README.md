@@ -16,7 +16,7 @@ For a GUI: Do not use any arguments. (Disabled on headless systems.)
 
 Options indicated by `*` are required. You must also use either `client` or `server`.
 
-<small>Last updated for v1.0.0 .</small>
+<small>Last updated for v1.0.1 .</small>
 
 ```
 Usage: CurseModpackDownloader [options] [command] [command options]
@@ -86,6 +86,8 @@ java -jar CurseModpackDownloader.jar --delete -i TestModpack.zip -o ~/.local/sha
 - Download files that are archived.
     - Requires ugly API & CF login info
 - Make a nice GUI
+- Make modpack report
+- Log to file
 
 ## Legal
 
