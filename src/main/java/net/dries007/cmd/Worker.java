@@ -633,8 +633,6 @@ public class Worker implements Runnable
                             curseFile.fileName = file.get("FileNameOnDisk").getAsString();
                             String rawURL = file.get("DownloadURL").getAsString();
                             curseFile.url = FilenameUtils.getFullPath(rawURL) + URLEncoder.encode(FilenameUtils.getName(rawURL), "UTF-8").replace("+", "%20");
-                            logger.println(rawURL);
-                            logger.println(curseFile.url);
                         }
                         catch (IOException ignored)
                         {
