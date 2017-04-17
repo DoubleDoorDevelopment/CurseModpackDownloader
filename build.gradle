@@ -24,7 +24,7 @@ sourceCompatibility = 1.8
 archivesBaseName = 'CurseModpackDownloader'
 group = 'net.dries007.cmd'
 def buildNr = System.getenv().BUILD_NUMBER ?: 'SNAPSHOT'
-version = '1.0.0.' + buildNr
+version = '1.0.2.' + buildNr
 
 configurations {
     compile
