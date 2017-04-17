@@ -626,15 +626,28 @@ public class Worker implements Runnable
                     {
                         try
                         {
-                            JsonObject project = Helper.parseJson(URL_MAGIC + curseFile.projectID + ".json").getAsJsonObject();
+                            try
+                            {
+                                JsonObject project = Helper.parseJson(URL_MAGIC + curseFile.projectID + ".json").getAsJsonObject();
+                                curseFile.projectName = project.get("Name").getAsString();
+                            }
+                            catch (Exception ignored)
+                            {
+                                // just for nice log anyway...
+                            }
+
                             JsonObject file = Helper.parseJson(URL_MAGIC + curseFile.projectID + "/" + curseFile.fileID + ".json").getAsJsonObject();
 
-                            curseFile.projectName = project.get("Name").getAsString();
+                            if (file.has("error"))
+                            {
+                                throw new IOException(file.get("message").getAsString());
+                            }
+
                             curseFile.fileName = file.get("FileNameOnDisk").getAsString();
                             String rawURL = file.get("DownloadURL").getAsString();
                             curseFile.url = FilenameUtils.getFullPath(rawURL) + URLEncoder.encode(FilenameUtils.getName(rawURL), "UTF-8").replace("+", "%20");
                         }
-                        catch (IOException ignored)
+                        catch (IllegalStateException | IOException ignored)
                         {
                             if (!arguments.quiet)
                             {
@@ -667,6 +680,11 @@ public class Worker implements Runnable
                 {
                     failedToDownload.add(curseFile);
                     logger.printf("Mod %3d: %10d %10d '%s' '%s' ERROR: %s (%s)\n", nextFile + 1, curseFile.projectID, curseFile.fileID, curseFile.projectName, curseFile.fileName, e.getClass().getName(), e.getMessage());
+                }
+                catch (Exception e)
+                {
+                    logger.printf("Mod %3d: %10d %10d '%s' '%s' FATAL ERROR: %s (%s)\n", nextFile + 1, curseFile.projectID, curseFile.fileID, curseFile.projectName, curseFile.fileName, e.getClass().getName(), e.getMessage());
+                    throw e;
                 }
             }
         }
