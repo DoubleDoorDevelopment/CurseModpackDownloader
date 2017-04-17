@@ -70,6 +70,9 @@ public class Arguments
     @Parameter(names = {"--name"}, description = "Override the name. (Only useful when MultiMC or zipping without --root-zip)")
     public String name;
 
+    @Parameter(names = {"-m", "--magic"}, description = "Use magic to try and download all mods. Uses external API hosted by Dries007.")
+    public boolean magic = false;
+
     public boolean isClient;
     public boolean zipOutput;
     public boolean isInputURL;

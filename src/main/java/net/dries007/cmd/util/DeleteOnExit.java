@@ -39,17 +39,21 @@ public class DeleteOnExit
 
     private static void init()
     {
-        thread = new Thread(() ->
+        thread = new Thread(new Runnable()
         {
-            for (File file : fileList)
+            @Override
+            public void run()
             {
-                try
+                for (File file : fileList)
                 {
-                    FileUtils.deleteDirectory(file);
-                }
-                catch (IOException ignore)
-                {
-                    // meh
+                    try
+                    {
+                        FileUtils.deleteDirectory(file);
+                    }
+                    catch (IOException ignore)
+                    {
+                        // meh
+                    }
                 }
             }
         }, "DeleteOnExitThread");

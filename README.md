@@ -16,7 +16,7 @@ For a GUI: Do not use any arguments. (Disabled on headless systems.)
 
 Options indicated by `*` are required. You must also use either `client` or `server`.
 
-<small>Last updated for v1.0.1 .</small>
+<small>Last updated for v1.0.2 .</small>
 
 ```
 Usage: CurseModpackDownloader [options] [command] [command options]
@@ -30,6 +30,9 @@ Usage: CurseModpackDownloader [options] [command] [command options]
       Input file/URL (CurseForge modpack zip)
     --keep-tmp
       Keep the tmp folder after the program has exited.
+      Default: false
+    -m, --magic
+      Use magic to try and download all mods. Uses external API hosted by Dries007.
       Default: false
     --name
       Override the name. (Only useful when MultiMC or zipping without --root-zip)
@@ -67,7 +70,6 @@ Usage: CurseModpackDownloader [options] [command] [command options]
           --eula
             Include a EULA file. Only use if _you_ are the end user, and you agree with the Mojang EULA!
             Default: false
-
 ```
 
 ### Examples

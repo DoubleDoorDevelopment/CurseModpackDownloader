@@ -35,11 +35,11 @@ import net.lingala.zip4j.progress.ProgressMonitor;
 import net.lingala.zip4j.util.Zip4jConstants;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.io.IOUtils;
 
 import java.io.*;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -53,6 +53,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class Worker implements Runnable
 {
+    private static final String URL_FORGE_MAVEN = "http://files.minecraftforge.net/maven/net/minecraftforge/forge/";
+    private final static String URL_FORGE_JSON = URL_FORGE_MAVEN + "json";
+    private final static String URL_MAGIC = "https://cursemeta.dries007.net/";
+
     private final Arguments arguments;
     private final File tmp;
     private final File tmpUnzip;
@@ -123,7 +127,7 @@ public class Worker implements Runnable
      * - Do sided stuff (download & install forge if required; make multimc instance file)
      * - Move/zip from tmp to output.
      */
-    private void work() throws IOException, ZipException, ModpackException, InterruptedException
+    private void work() throws Throwable
     {
         if (arguments.isInputURL)
         {
@@ -137,6 +141,11 @@ public class Worker implements Runnable
         }
         ProgressMonitor unzip = doUnpack();
 
+        if (!arguments.quiet)
+        {
+            logger.println("Total mod count: " + manifest.files.size());
+        }
+
         // counter keeps track of download index for load sharing.
         final AtomicInteger counter = new AtomicInteger(0);
         // keep thread objects, so we can wait on them later.
@@ -144,6 +153,14 @@ public class Worker implements Runnable
         for (int i = 0; i < arguments.threads; i++)
         {
             downloaders[i] = new Thread(new Downloader(counter), "Downloader-" + i);
+            downloaders[i].setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler()
+            {
+                @Override
+                public void uncaughtException(Thread t, Throwable e)
+                {
+                    error = e;
+                }
+            });
             downloaders[i].start();
         }
 
@@ -154,15 +171,19 @@ public class Worker implements Runnable
             if (forgeVersion != null)
             {
                 ForgeJson forgeJson = downloadForgeJson();
+                if (error != null) throw error;
                 manifest.forgeBuild = resolveForgeBuild(forgeJson, forgeVersion);
+                if (error != null) throw error;
                 if (!arguments.client.multimc)
                 {
                     File forge = downloadForgeInstaller(forgeJson);
+                    if (error != null) throw error;
                     if (!arguments.isClient)
                     {
                         if (forge != null)
                         {
                             doForgeInstall(forge);
+                            if (error != null) throw error;
                         }
                         else
                         {
@@ -178,6 +199,7 @@ public class Worker implements Runnable
         {
             Helper.sleep(10);
         }
+        if (error != null) throw error;
         if (unzip.getResult() != ProgressMonitor.RESULT_SUCCESS)
         {
             throw new IOException("Couldn't unzip the input...", unzip.getException());
@@ -186,7 +208,7 @@ public class Worker implements Runnable
         {
             thread.join();
         }
-
+        if (error != null) throw error;
         doOutput();
     }
 
@@ -450,21 +472,15 @@ public class Worker implements Runnable
         {
             logger.println("Getting forge version list json...");
         }
-        InputStream input = new URL("http://files.minecraftforge.net/maven/net/minecraftforge/forge/json").openStream();
-        ForgeJson forgeJson = null;
         try
         {
-            forgeJson = Helper.GSON.fromJson(IOUtils.toString(input), ForgeJson.class);
+            return Helper.parseJson(URL_FORGE_JSON, ForgeJson.class);
         }
         catch (Exception e)
         {
             logger.println("ERROR Forge JSON download. Something random went wrong, you'll have to install forge yourself: " + e.getMessage());
         }
-        finally
-        {
-            IOUtils.closeQuietly(input);
-        }
-        return forgeJson;
+        return null;
     }
 
     private File downloadForgeInstaller(ForgeJson forgeJson) throws IOException
@@ -478,7 +494,7 @@ public class Worker implements Runnable
         {
             if (file.type.equalsIgnoreCase("installer"))
             {
-                StringBuilder urlString = new StringBuilder("http://files.minecraftforge.net/maven/net/minecraftforge/forge/");
+                StringBuilder urlString = new StringBuilder(URL_FORGE_MAVEN);
                 urlString.append(manifest.forgeBuild.mcversion).append('-').append(manifest.forgeBuild.version);
                 if (manifest.forgeBuild.branch != null)
                 {
@@ -599,21 +615,52 @@ public class Worker implements Runnable
         @Override
         public void run()
         {
-            while (true)
+            while (error == null)
             {
                 int nextFile = counter.getAndIncrement();
                 if (nextFile >= max) break; // work done
                 CurseFile curseFile = manifest.files.get(nextFile);
                 try
                 {
-                    curseFile.projectName = Helper.getProjectName(curseFile.projectID);
-                    curseFile.url = Helper.getFileURL(curseFile.projectName, curseFile.fileID);
-                    curseFile.fileName = URLDecoder.decode(FilenameUtils.getName(curseFile.url), "UTF-8");
+                    if (arguments.magic)
+                    {
+                        try
+                        {
+                            JsonObject project = Helper.parseJson(URL_MAGIC + curseFile.projectID + ".json").getAsJsonObject();
+                            JsonObject file = Helper.parseJson(URL_MAGIC + curseFile.projectID + "/" + curseFile.fileID + ".json").getAsJsonObject();
+
+                            curseFile.projectName = project.get("Name").getAsString();
+                            curseFile.fileName = file.get("FileNameOnDisk").getAsString();
+                            String rawURL = file.get("DownloadURL").getAsString();
+                            curseFile.url = FilenameUtils.getFullPath(rawURL) + URLEncoder.encode(FilenameUtils.getName(rawURL), "UTF-8").replace("+", "%20");
+                            logger.println(rawURL);
+                            logger.println(curseFile.url);
+                        }
+                        catch (IOException ignored)
+                        {
+                            if (!arguments.quiet)
+                            {
+                                logger.printf("Mod %3d: %10d %10d No magic. Trying CurseForge...\n", nextFile + 1, curseFile.projectID, curseFile.fileID);
+                            }
+                        }
+                    }
+
+                    if (curseFile.url == null)
+                    {
+                        curseFile.projectName = Helper.getProjectName(curseFile.projectID);
+                        curseFile.url = Helper.getFileURL(curseFile.projectName, curseFile.fileID);
+                        if (curseFile.url == null)
+                        {
+                            throw new IOException("File no longer available via CurseForge.");
+                        }
+                        curseFile.fileName = URLDecoder.decode(FilenameUtils.getName(curseFile.url), "UTF-8");
+                    }
+
                     curseFile.file = new File(tmpDownload, curseFile.fileName);
 
                     if (!arguments.quiet)
                     {
-                        logger.printf("Getting mod #%d of %d: Project '%s' (%d) File '%s' (%d) from '%s'\n", nextFile + 1, max, curseFile.projectName, curseFile.projectID, curseFile.fileName, curseFile.fileID, curseFile.url);
+                        logger.printf("Mod %3d: %10d %10d '%s' '%s' Url '%s'\n", nextFile + 1, curseFile.projectID, curseFile.fileID, curseFile.projectName, curseFile.fileName, curseFile.url);
                     }
 
                     FileUtils.copyURLToFile(new URL(curseFile.url), curseFile.file);
@@ -621,7 +668,7 @@ public class Worker implements Runnable
                 catch (IOException e)
                 {
                     failedToDownload.add(curseFile);
-                    logger.printf("ERROR: Error downloading project '%s' (%d) file '%s' (%d) with message: %s (%s)\n", curseFile.projectName, curseFile.projectID, curseFile.fileName, curseFile.fileID, e.getClass().getName(), e.getMessage());
+                    logger.printf("Mod %3d: %10d %10d '%s' '%s' ERROR: %s (%s)\n", nextFile + 1, curseFile.projectID, curseFile.fileID, curseFile.projectName, curseFile.fileName, e.getClass().getName(), e.getMessage());
                 }
             }
         }

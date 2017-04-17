@@ -16,12 +16,13 @@
 
 package net.dries007.cmd;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.google.gson.*;
 import net.dries007.cmd.util.forge.ForgeFile;
 import net.dries007.cmd.util.forge.ForgeFileJson;
+import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
@@ -38,12 +39,15 @@ public class Helper
             .create();
 
     public static final int MAX_REDIRECTS = 10;
+    public static final JsonParser JSON_PARSER = new JsonParser();
 
     private Helper() {}
 
     public static String getFileURL(String projectName, int fileId) throws IOException
     {
-        return getFinalURL("https://minecraft.curseforge.com/projects/" + projectName + "/files/" + fileId + "/download");
+        String pre = "https://minecraft.curseforge.com/projects/" + projectName + "/files/" + fileId + "/download";
+        String post = getFinalURL(pre);
+        return pre.equals(post) ? null : post;
     }
 
     public static String getProjectName(int projectId) throws IOException
@@ -89,6 +93,34 @@ public class Helper
         catch (InterruptedException ignored)
         {
 
+        }
+    }
+
+    public static <T> T parseJson(String url, Class<T> aClass) throws IOException, JsonParseException
+    {
+        InputStreamReader isr = null;
+        try
+        {
+            isr = new InputStreamReader(new URL(getFinalURL(url)).openStream());
+            return GSON.fromJson(isr, aClass);
+        }
+        finally
+        {
+            IOUtils.closeQuietly(isr);
+        }
+    }
+
+    public static JsonElement parseJson(String url) throws IOException, JsonParseException
+    {
+        InputStreamReader isr = null;
+        try
+        {
+            isr = new InputStreamReader(new URL(getFinalURL(url)).openStream());
+            return JSON_PARSER.parse(isr);
+        }
+        finally
+        {
+            IOUtils.closeQuietly(isr);
         }
     }
 }
