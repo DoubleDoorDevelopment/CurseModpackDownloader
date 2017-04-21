@@ -4,6 +4,11 @@ A Curse Modpack downloader.
 
 Download pre-build releases from [here](https://jenkins.dries007.net/job/CurseModpackDownloader/).
 
+**This version can:**
+- be used to upgrade existing server
+- make MultiMC instances
+- download complete modpacks, even with archived mods.
+
 ## Usage
 
 For up to date usage/help information, run the jar with `--help`.
@@ -85,8 +90,6 @@ java -jar CurseModpackDownloader.jar --delete -i TestModpack.zip -o ~/.local/sha
 
 ## TODO
 
-- Download files that are archived.
-    - Requires ugly API & CF login info
 - Make a nice GUI
 - Make modpack report
 - Log to file

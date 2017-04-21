@@ -19,12 +19,12 @@ apply plugin: 'maven'
 apply plugin: 'idea'
 apply plugin: 'eclipse'
 
-sourceCompatibility = 1.8
+sourceCompatibility = 1.7
 
 archivesBaseName = 'CurseModpackDownloader'
 group = 'net.dries007.cmd'
 def buildNr = System.getenv().BUILD_NUMBER ?: 'SNAPSHOT'
-version = '1.0.2.' + buildNr
+version = '1.0.3.' + buildNr
 
 configurations {
     compile

@@ -428,11 +428,7 @@ public class Worker implements Runnable
         StringBuilder sb = new StringBuilder("InstanceType=OneSix\nIntendedVersion=").append(manifest.minecraft.version).append("\nname=").append(name);
         if (manifest.forgeBuild != null)
         {
-            sb.append("\nForgeVersion=").append(manifest.forgeBuild.mcversion).append('-').append(manifest.forgeBuild.version);
-            if (manifest.forgeBuild.branch != null)
-            {
-                sb.append('-').append(manifest.forgeBuild.branch);
-            }
+            sb.append("\nForgeVersion=").append(manifest.forgeBuild.version);
         }
         FileUtils.writeStringToFile(new File(instanceFolder, "instance.cfg"), sb.append('\n').toString());
         File mcFolder = new File(instanceFolder, "minecraft");
