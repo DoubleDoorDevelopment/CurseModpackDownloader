@@ -19,6 +19,8 @@ package net.dries007.cmd;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.Parameters;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import org.apache.commons.io.FilenameUtils;
 
 import java.io.File;
@@ -37,7 +39,7 @@ public class Arguments
     @Parameter(names = {"--help", "-h", "-?"}, description = "Display this text.", help = true)
     public boolean help = false;
 
-    @Parameter(names = {"-i", "--input"}, description = "Input file/URL (CurseForge modpack zip)", required = true)
+    @Parameter(names = {"-i", "--input"}, description = "Input file/URL (CurseForge modpack zip OR, if magic, CurseForge projectID[:fileID OR release OR beta OR -1 for recommended])", required = true)
     public String input;
 
     @Parameter(names = {"-o", "--output"}, description = "Output folder or zip file.", required = true)
@@ -88,9 +90,75 @@ public class Arguments
      */
     public void validate(String command)
     {
+        if (validated) throw new IllegalStateException("Already validated.");
         if (command == null) throw new ParameterException("You must used a command.");
 
         if (delete) override = true;
+
+        if (magic) // try and see if the input format is <projectID>:[<fileID>|release|beta|-1]
+        {
+            try
+            {
+                int fileID = -1;
+                int projectID;
+                int split = input.indexOf(':');
+                String type = null;
+                if (split != -1) // fileId is optional. none = -1 = default file for project
+                {
+                    try
+                    {
+                        fileID = Integer.parseInt(input.substring(split + 1));
+                    }
+                    catch (NumberFormatException ignored)
+                    {
+                        type = input.substring(split + 1);
+                    }
+                }
+                // required, don't out of order cause we need projectId if fileId is dynamic.
+                projectID = Integer.parseInt(input.substring(0, split));
+
+                // now, if fileID wasn't a number (or it was -1)
+                if (fileID == -1)
+                {
+                    JsonObject root = Helper.parseJson(Helper.URL_MAGIC + projectID + ".json").getAsJsonObject();
+                    if (!root.get("PackageType").getAsString().equalsIgnoreCase("modpack"))
+                    {
+                        throw new IllegalArgumentException("ProjectID " + projectID + " isn't a modpack.");
+                    }
+                    if (type == null) // fileID was int, but must be -1, so pick default
+                    {
+                        fileID = root.get("DefaultFileId").getAsInt();
+                    }
+                    else // fileID wasn't an int, look in array to find matching latest version
+                    {
+                        for (JsonElement fileE : root.getAsJsonArray("GameVersionLatestFiles"))
+                        {
+                            JsonObject file = fileE.getAsJsonObject();
+                            if (file.get("FileType").getAsString().equalsIgnoreCase(type))
+                            {
+                                fileID = file.get("ProjectFileID").getAsInt();
+                                break; // Gotcha
+                            }
+                        }
+                        if (fileID == -1)
+                        {
+                            throw new IllegalArgumentException("Could not pick a file based on latest files with type " + type);
+                        }
+                    }
+                }
+                // fetch actual URL
+                JsonObject root = Helper.parseJson(Helper.URL_MAGIC + projectID + "/" + fileID + ".json").getAsJsonObject();
+                input = root.get("DownloadURL").getAsString();
+            }
+            catch (IOException e)
+            {
+                throw new ParameterException("Cannot pull in Modpack data based on ProjectID and FileID.", e);
+            }
+            catch (NumberFormatException ignored)
+            {
+                // NOP
+            }
+        }
 
         try
         {

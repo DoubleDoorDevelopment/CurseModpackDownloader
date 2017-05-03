@@ -54,9 +54,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class Worker implements Runnable
 {
-    private static final String URL_FORGE_MAVEN = "http://files.minecraftforge.net/maven/net/minecraftforge/forge/";
-    private static final String URL_FORGE_JSON = URL_FORGE_MAVEN + "json";
-    private static final String URL_MAGIC = "https://cursemeta.dries007.net/";
 
     private final Arguments arguments;
     private final File tmp;
@@ -238,7 +235,7 @@ public class Worker implements Runnable
             if (arguments.magic)
             {
                 pw.print("Mod metadata provided by ");
-                pw.println(URL_MAGIC);
+                pw.println(Helper.URL_MAGIC);
             }
 
             pw.print("Minecraft verion: ");
@@ -545,7 +542,7 @@ public class Worker implements Runnable
         }
         try
         {
-            return Helper.parseJson(URL_FORGE_JSON, ForgeJson.class);
+            return Helper.parseJson(Helper.URL_FORGE_JSON, ForgeJson.class);
         }
         catch (Exception e)
         {
@@ -565,7 +562,7 @@ public class Worker implements Runnable
         {
             if (file.type.equalsIgnoreCase("installer"))
             {
-                StringBuilder urlString = new StringBuilder(URL_FORGE_MAVEN);
+                StringBuilder urlString = new StringBuilder(Helper.URL_FORGE_MAVEN);
                 urlString.append(manifest.forgeBuild.mcversion).append('-').append(manifest.forgeBuild.version);
                 if (manifest.forgeBuild.branch != null)
                 {
@@ -699,7 +696,7 @@ public class Worker implements Runnable
                         {
                             try
                             {
-                                JsonObject project = Helper.parseJson(URL_MAGIC + curseFile.projectID + ".json").getAsJsonObject();
+                                JsonObject project = Helper.parseJson(Helper.URL_MAGIC + curseFile.projectID + ".json").getAsJsonObject();
                                 curseFile.projectName = project.get("Name").getAsString();
                             }
                             catch (Exception ignored)
@@ -707,7 +704,7 @@ public class Worker implements Runnable
                                 // just for nice log anyway...
                             }
 
-                            JsonObject file = Helper.parseJson(URL_MAGIC + curseFile.projectID + "/" + curseFile.fileID + ".json").getAsJsonObject();
+                            JsonObject file = Helper.parseJson(Helper.URL_MAGIC + curseFile.projectID + "/" + curseFile.fileID + ".json").getAsJsonObject();
 
                             if (file.has("error"))
                             {

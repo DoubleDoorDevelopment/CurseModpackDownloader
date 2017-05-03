@@ -33,6 +33,10 @@ import java.net.URL;
 public class Helper
 {
     public static final String NAME = "CurseModpackDownloader";
+    public static final String URL_FORGE_MAVEN = "http://files.minecraftforge.net/maven/net/minecraftforge/forge/";
+    public static final String URL_FORGE_JSON = URL_FORGE_MAVEN + "json";
+    public static final String URL_MAGIC = "https://cursemeta.dries007.net/";
+
     public static final Arguments ARGUMENTS = new Arguments();
     public static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping()
             .registerTypeHierarchyAdapter(ForgeFile.class, new ForgeFileJson())
