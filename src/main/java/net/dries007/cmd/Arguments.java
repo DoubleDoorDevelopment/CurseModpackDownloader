@@ -73,6 +73,9 @@ public class Arguments
     @Parameter(names = {"-m", "--magic"}, description = "Use magic to try and download all mods. Uses external API hosted by Dries007.")
     public boolean magic = false;
 
+    @Parameter(names = {"-l", "--log"}, description = "Log to file and to stdout.")
+    public File log = null;
+
     public boolean isClient;
     public boolean zipOutput;
     public boolean isInputURL;

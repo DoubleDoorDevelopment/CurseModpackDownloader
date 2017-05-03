@@ -90,9 +90,9 @@ java -jar CurseModpackDownloader.jar --delete -i TestModpack.zip -o ~/.local/sha
 
 ## TODO
 
-- Make a nice GUI
-- Make modpack report
-- Log to file
+- [ ] ~~Make a nice GUI~~ ([MultiMC](https://multimc.org) has support for Curse packs now.)
+- [x] Make modpack report (v1.0.4)
+- [x] Log to file (v1.0.4)
 
 ## Legal
 

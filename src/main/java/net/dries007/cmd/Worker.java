@@ -35,6 +35,7 @@ import net.lingala.zip4j.progress.ProgressMonitor;
 import net.lingala.zip4j.util.Zip4jConstants;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.IOUtils;
 
 import java.io.*;
 import java.net.URL;
@@ -54,8 +55,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class Worker implements Runnable
 {
     private static final String URL_FORGE_MAVEN = "http://files.minecraftforge.net/maven/net/minecraftforge/forge/";
-    private final static String URL_FORGE_JSON = URL_FORGE_MAVEN + "json";
-    private final static String URL_MAGIC = "https://cursemeta.dries007.net/";
+    private static final String URL_FORGE_JSON = URL_FORGE_MAVEN + "json";
+    private static final String URL_MAGIC = "https://cursemeta.dries007.net/";
 
     private final Arguments arguments;
     private final File tmp;
@@ -212,6 +213,78 @@ public class Worker implements Runnable
         doOutput();
     }
 
+    private void makeMarketingFile() throws FileNotFoundException
+    {
+        File f = new File(tmpOut, Helper.NAME + ".txt");
+        PrintWriter pw = null;
+        try
+        {
+            f = f.getAbsoluteFile();
+            pw = new PrintWriter(f);
+
+            pw.print(Helper.NAME);
+            pw.print(" v1.x Modpack info file");
+            pw.println();
+            for (int i = 0; i < Helper.NAME.length(); i++)
+            {
+                pw.print("=");
+            }
+            pw.print("=======================");
+            pw.println();
+
+            pw.print("Downloaded date/time: ");
+            pw.println(new Date().toString());
+
+            if (arguments.magic)
+            {
+                pw.print("Mod metadata provided by ");
+                pw.println(URL_MAGIC);
+            }
+
+            pw.print("Minecraft verion: ");
+            pw.println(manifest.minecraft.version);
+            pw.print("Pack name: ");
+            pw.println(manifest.name);
+            pw.print("Pack version: ");
+            pw.println(manifest.version);
+            pw.print("Pack author: ");
+            pw.println(manifest.author);
+            pw.println("Modloaders:");
+            pw.println("-----------");
+            for (Modloader modloader : manifest.minecraft.modLoaders)
+            {
+                pw.print('\t');
+                pw.print(modloader.id);
+                pw.print("    Primary: ");
+                pw.println(modloader.primary);
+            }
+            pw.println("Forge Mods: (projectId fileId: projectName fineName (URL) [Optional])");
+            pw.println("----------------------------------------------------------");
+            for (CurseFile mod : manifest.files)
+            {
+                if (failedToDownload.contains(mod))
+                {
+                    pw.print("!FAILED! ");
+                }
+                pw.print(String.format("%10d %10d: %-50s %-50s", mod.projectID, mod.fileID, mod.projectName, mod.fileName));
+                if (!mod.required)
+                {
+                    pw.print(" Optional");
+                }
+                pw.println();
+            }
+        }
+        catch (IOException e)
+        {
+            logger.println("Can't make " + f + " Cause: " + e.getClass().getName() + ": " + e.getMessage());
+            e.printStackTrace();
+        }
+        finally
+        {
+            IOUtils.closeQuietly(pw);
+        }
+    }
+
     private void doOutput() throws IOException, ZipException
     {
         File tmpOut = this.tmpOut;
@@ -228,6 +301,8 @@ public class Worker implements Runnable
         }
         FileUtils.copyDirectory(tmpDownload, new File(tmpOut, "mods"));
         FileUtils.copyDirectory(new File(tmpUnzip, manifest.overrides), tmpOut);
+
+        makeMarketingFile();
 
         if (arguments.zipOutput)
         {
@@ -643,11 +718,11 @@ public class Worker implements Runnable
                             String rawURL = file.get("DownloadURL").getAsString();
                             curseFile.url = FilenameUtils.getFullPath(rawURL) + URLEncoder.encode(FilenameUtils.getName(rawURL), "UTF-8").replace("+", "%20");
                         }
-                        catch (IllegalStateException | IOException ignored)
+                        catch (IllegalStateException | IOException e)
                         {
                             if (!arguments.quiet)
                             {
-                                logger.printf("Mod %3d: %10d %10d No magic. Trying CurseForge...\n", nextFile + 1, curseFile.projectID, curseFile.fileID);
+                                logger.printf("Mod %3d: %10d %10d No magic. Trying CurseForge... (%s: %s)\n", nextFile + 1, curseFile.projectID, curseFile.fileID, e.getClass().getName(), e.getMessage());
                             }
                         }
                     }

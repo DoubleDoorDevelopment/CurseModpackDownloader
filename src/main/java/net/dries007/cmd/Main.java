@@ -18,12 +18,10 @@ package net.dries007.cmd;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
-import net.dries007.cmd.ui.Gui;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.output.TeeOutputStream;
 
-import java.awt.*;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 
@@ -60,14 +58,8 @@ public class Main
         jCommander.addCommand(ARGUMENTS.server);
     }
 
-    public static void main(String[] args)
+    public static void main(String[] args) throws FileNotFoundException
     {
-        if (args.length == 0 && !GraphicsEnvironment.isHeadless())
-        {
-            Gui.launch(Gui.class, args);
-            return;
-        }
-
         try
         {
             jCommander.parse(args);
@@ -85,7 +77,18 @@ public class Main
             printHelp();
         }
 
-        new Worker(ARGUMENTS).run();
+        Worker w = new Worker(ARGUMENTS);
+
+        FileOutputStream fos = null;
+        if (ARGUMENTS.log != null && !ARGUMENTS.quiet)
+        {
+            fos = new FileOutputStream(ARGUMENTS.log);
+            w.setLogger(new PrintStream(new TeeOutputStream(System.out, fos)));
+        }
+
+        w.run();
+
+        IOUtils.closeQuietly(fos);
     }
 
     private static void printHelp()
