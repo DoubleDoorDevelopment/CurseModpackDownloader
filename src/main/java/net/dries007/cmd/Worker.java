@@ -202,11 +202,16 @@ public class Worker implements Runnable
         {
             throw new IOException("Couldn't unzip the input...", unzip.getException());
         }
+        int i = downloaders.length;
         for (Thread thread : downloaders)
         {
             thread.join();
+            logger.println("Download thread done, " + (i--) + " to go.");
+            logger.flush();
         }
         if (error != null) throw error;
+        logger.println("All Download threads done without errors.");
+        logger.flush();
         doOutput();
     }
 
@@ -629,10 +634,15 @@ public class Worker implements Runnable
         }
         catch (Throwable e)
         {
-            e.printStackTrace();
             this.error = e;
         }
         done.set(true);
+        if (logger != System.out)
+        {
+            logger.println();
+            logger.flush();
+            logger.close();
+        }
     }
 
     public Throwable getError()

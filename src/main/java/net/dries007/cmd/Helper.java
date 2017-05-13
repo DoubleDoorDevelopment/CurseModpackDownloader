@@ -25,6 +25,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author Dries007
@@ -36,6 +38,7 @@ public class Helper
     public static final String URL_FORGE_MAVEN = "http://files.minecraftforge.net/maven/net/minecraftforge/forge/";
     public static final String URL_FORGE_JSON = URL_FORGE_MAVEN + "json";
     public static final String URL_MAGIC = "https://cursemeta.dries007.net/";
+    public static final Pattern PATTERN_INPUT_CURSE_ID = Pattern.compile("^(\\d)+(?::(\\d+|-1|release|beta))?$");
 
     public static final Arguments ARGUMENTS = new Arguments();
     public static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping()
@@ -117,14 +120,78 @@ public class Helper
     public static JsonElement parseJson(String url) throws IOException, JsonParseException
     {
         InputStreamReader isr = null;
+        URL finalURL = new URL(getFinalURL(url));
         try
         {
-            isr = new InputStreamReader(new URL(getFinalURL(url)).openStream());
+            isr = new InputStreamReader(finalURL.openStream());
             return JSON_PARSER.parse(isr);
+        }
+        catch (Exception e)
+        {
+            throw e;
         }
         finally
         {
             IOUtils.closeQuietly(isr);
         }
+    }
+
+    public static String parseIdBasedInput(String input) throws IOException
+    {
+        Matcher matcher = PATTERN_INPUT_CURSE_ID.matcher(input);
+
+        if (!matcher.matches()) return input;
+
+        int fileID = -1; // -1 or fileID
+        String type = null; // null, release or beta
+        int projectID = Integer.parseInt(matcher.group(1)); // required to be there, and it's always valid.
+
+        if (matcher.groupCount() > 1)
+        {
+            try
+            {
+                fileID = Integer.parseInt(matcher.group(2));
+            }
+            catch (NumberFormatException e)
+            {
+                type = matcher.group(2);
+            }
+        }
+
+        // now, if fileID wasn't a number (or it was -1)
+        if (fileID == -1)
+        {
+            JsonObject root = Helper.parseJson(Helper.URL_MAGIC + projectID + ".json").getAsJsonObject();
+            if (!root.get("PackageType").getAsString().equalsIgnoreCase("modpack"))
+            {
+                throw new IllegalArgumentException("ProjectID " + projectID + " isn't a modpack.");
+            }
+            if (type == null) // fileID was int, but must be -1, so pick default
+            {
+                fileID = root.get("DefaultFileId").getAsInt();
+            }
+            else // fileID wasn't an int, look in array to find matching latest version
+            {
+                for (JsonElement fileE : root.getAsJsonArray("GameVersionLatestFiles"))
+                {
+                    JsonObject file = fileE.getAsJsonObject();
+                    if (file.get("FileType").getAsString().equalsIgnoreCase(type))
+                    {
+                        fileID = file.get("ProjectFileID").getAsInt();
+                        break; // Gotcha
+                    }
+                }
+                if (fileID == -1)
+                {
+                    throw new IllegalArgumentException("Could not pick a file based on latest files with type " + type);
+                }
+            }
+        }
+
+        // fetch actual URL
+        JsonObject root = Helper.parseJson(Helper.URL_MAGIC + projectID + "/" + fileID + ".json").getAsJsonObject();
+        input = root.get("DownloadURL").getAsString();
+
+        return input;
     }
 }
