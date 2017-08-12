@@ -189,9 +189,6 @@ public class Helper
             }
         }
 
-        System.out.println(projectID);
-        System.out.println(fileID);
-
         // fetch actual URL
         JsonObject root = Helper.parseJson(Helper.URL_MAGIC + projectID + "/" + fileID + ".json").getAsJsonObject();
         input = root.get("DownloadURL").getAsString();
