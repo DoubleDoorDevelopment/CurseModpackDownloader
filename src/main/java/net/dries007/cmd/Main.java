@@ -26,6 +26,7 @@ import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 
 import static net.dries007.cmd.Helper.ARGUMENTS;
+import static net.dries007.cmd.Helper.NAME;
 
 /**
  * @author Dries007
@@ -50,7 +51,7 @@ public class Main
         }
 
         jCommander.setAllowParameterOverwriting(true);
-        jCommander.setProgramName(Helper.NAME);
+        jCommander.setProgramName(NAME);
         jCommander.setColumnSize(Integer.MAX_VALUE);
 
         jCommander.addObject(ARGUMENTS);
@@ -60,6 +61,8 @@ public class Main
 
     public static void main(String[] args) throws FileNotFoundException
     {
+        System.setProperty("http.agent", NAME + "/1.0");
+
         try
         {
             jCommander.parse(args);

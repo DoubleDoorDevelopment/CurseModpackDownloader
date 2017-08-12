@@ -38,7 +38,7 @@ public class Helper
     public static final String URL_FORGE_MAVEN = "http://files.minecraftforge.net/maven/net/minecraftforge/forge/";
     public static final String URL_FORGE_JSON = URL_FORGE_MAVEN + "json";
     public static final String URL_MAGIC = "https://cursemeta.dries007.net/";
-    public static final Pattern PATTERN_INPUT_CURSE_ID = Pattern.compile("^(\\d)+(?::(\\d+|-1|release|beta))?$");
+    public static final Pattern PATTERN_INPUT_CURSE_ID = Pattern.compile("^(\\d+)(?::(\\d+|-1|release|beta))?$");
 
     public static final Arguments ARGUMENTS = new Arguments();
     public static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping()
@@ -128,6 +128,7 @@ public class Helper
         }
         catch (Exception e)
         {
+            System.err.println(finalURL);
             throw e;
         }
         finally
@@ -187,6 +188,9 @@ public class Helper
                 }
             }
         }
+
+        System.out.println(projectID);
+        System.out.println(fileID);
 
         // fetch actual URL
         JsonObject root = Helper.parseJson(Helper.URL_MAGIC + projectID + "/" + fileID + ".json").getAsJsonObject();

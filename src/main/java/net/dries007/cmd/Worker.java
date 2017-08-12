@@ -206,7 +206,10 @@ public class Worker implements Runnable
         for (Thread thread : downloaders)
         {
             thread.join();
-            logger.println("Download thread done, " + (i--) + " to go.");
+            if (--i != 0)
+            {
+                logger.println("Download thread done, " + i + " to go.");
+            }
             logger.flush();
         }
         if (error != null) throw error;
