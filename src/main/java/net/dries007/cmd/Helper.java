@@ -67,17 +67,30 @@ public class Helper
     {
         for (int i = 0; i < MAX_REDIRECTS; i++)
         {
+            url = url.replace(" ", "%20");
             HttpURLConnection con = null;
             try
             {
-                con = (HttpURLConnection) new URL(url).openConnection();
+                URL objURL = new URL(url);
+                con = (HttpURLConnection) objURL.openConnection();
                 con.setInstanceFollowRedirects(false);
                 con.connect();
-                if (con.getHeaderField("Location") == null)
-                {
-                    return url.replace("?cookieTest=1", "");
+                int code = con.getResponseCode();
+                String newUrl = null;
+                if (code == 200) {
+                    return url;
                 }
-                url = con.getHeaderField("Location");
+                if (code >= 300 && code < 400) {
+                    newUrl = con.getHeaderField("Location");
+                }
+                if (newUrl == null)
+                {
+                    url = url.replace("?cookieTest=1", "");
+                } else if (newUrl.charAt(0) == '/') {
+                    url = objURL.getProtocol()+"://"+objURL.getAuthority()+newUrl;
+                } else {
+                    url = newUrl;
+                }
             }
             catch (IOException e)
             {
