@@ -52,7 +52,7 @@ public class Helper
 
     public static String getFileURL(String projectName, int fileId) throws IOException
     {
-        String pre = "https://minecraft.curseforge.com/projects/" + projectName + "/files/" + fileId + "/download";
+        String pre = "https://www.curseforge.com/minecraft/mc-mods/" + projectName + "/download/" + fileId + "/file";
         String post = getFinalURL(pre);
         return pre.equals(post) ? null : post;
     }
