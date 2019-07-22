@@ -2,8 +2,6 @@
 
 A Curse Modpack downloader.
 
-Download pre-build releases from [here](https://jenkins.dries007.net/job/CurseModpackDownloader/).
-
 **This version can:**
 - be used to upgrade existing server
 - make MultiMC instances
